@@ -1,0 +1,103 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: opencut-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-opencut}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-opencut}
+      POSTGRES_DB: ${POSTGRES_DB:-opencut}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-opencut} -d ${POSTGRES_DB:-opencut}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  redis:
+    image: redis:8-alpine
+    container_name: opencut-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+
+  serverless-redis-http:
+    image: hiett/serverless-redis-http:latest
+    container_name: opencut-srh
+    restart: unless-stopped
+    environment:
+      SRH_MODE: env
+      SRH_TOKEN: ${SRH_TOKEN:-srh_redis_example_token}
+      SRH_CONNECTION_STRING: "redis://redis:6379"
+    depends_on:
+      - redis
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8788}
+    container_name: opencut-web
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-3100}:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:-postgresql://opencut:opencut@db:5432/opencut}
+      UPSTASH_REDIS_REST_URL: ${UPSTASH_REDIS_REST_URL:-http://serverless-redis-http:80}
+      UPSTASH_REDIS_REST_TOKEN: ${UPSTASH_REDIS_REST_TOKEN:-upstash_redis_example_token}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-your_long_random_secret_here_at_least_32_characters}
+    volumes:
+      - ${MOUNT_0:-./data:/app/data}
+      - ${MOUNT_1:-/tmp:/tmp/opencut-mount-1}
+      - ${MOUNT_2:-/tmp:/tmp/opencut-mount-2}
+      - ${MOUNT_3:-/tmp:/tmp/opencut-mount-3}
+      - ${MOUNT_4:-/tmp:/tmp/opencut-mount-4}
+      - ${MOUNT_5:-/tmp:/tmp/opencut-mount-5}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      serverless-redis-http:
+        condition: service_started
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: opencut-api
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-8788}:8787"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:-postgresql://opencut:opencut@db:5432/opencut}
+      UPSTASH_REDIS_REST_URL: ${UPSTASH_REDIS_REST_URL:-http://serverless-redis-http:80}
+      UPSTASH_REDIS_REST_TOKEN: ${UPSTASH_REDIS_REST_TOKEN:-upstash_redis_example_token}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-your_long_random_secret_here_at_least_32_characters}
+    volumes:
+      - ${MOUNT_0:-./data:/app/data}
+      - ${MOUNT_1:-/tmp:/tmp/opencut-mount-1}
+      - ${MOUNT_2:-/tmp:/tmp/opencut-mount-2}
+      - ${MOUNT_3:-/tmp:/tmp/opencut-mount-3}
+      - ${MOUNT_4:-/tmp:/tmp/opencut-mount-4}
+      - ${MOUNT_5:-/tmp:/tmp/opencut-mount-5}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      serverless-redis-http:
+        condition: service_started
+
+volumes:
+  postgres_data:
+  redis_data:

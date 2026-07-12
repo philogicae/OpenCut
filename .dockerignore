@@ -1,0 +1,73 @@
+# Dependencies
+node_modules
+**/node_modules
+
+# Build outputs
+dist
+**/dist
+build
+**/build
+.next
+**/.next
+
+# Git and VCS
+.git
+.gitignore
+.gitattributes
+
+# Docker files (prevent recursion)
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# IDE and editor
+.idea
+.vscode
+*.swp
+*.swo
+
+# Logs and temp
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+bun-debug.log*
+logs
+*.pid
+*.seed
+*.pid.lock
+
+# Environment files (use docker env or compose env instead)
+.env
+.env.*
+!.env.example
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Documentation and large files not needed in image
+README.md
+LICENSE
+docs
+*.md
+
+# Moon / proto cache (if any)
+.moon
+proto
+.prototools
+
+# Rust / cargo (not needed for web build)
+target
+**/*.rs
+Cargo.lock
+Cargo.toml
+
+# Test and coverage
+coverage
+.nyc_output
+*.lcov
+
+# Misc
+.turbo
+.tokeignore
